@@ -9,9 +9,9 @@ app.use(express.json());
 app.use('/roomtypes', require('./routes/roomTypes'));
 app.use('/rooms', require('./routes/rooms'));
 app.use('/customers', require('./routes/customers'));
-app.use('/bookings', require('./routes/bookings'));
-app.use('/payments', require('./routes/payments'));
-app.use('/reviews', require('./routes/reviews'));
+// app.use('/bookings', require('./routes/bookings'));
+// app.use('/payments', require('./routes/payments'));
+// app.use('/reviews', require('./routes/reviews'));
 
 app.use((err, req, res, next) => {
   console.error(err);
