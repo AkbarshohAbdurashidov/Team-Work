@@ -9,9 +9,9 @@ app.use(express.json());
 app.use('/roomtypes', require('./routes/roomTypes'));
 app.use('/rooms', require('./routes/rooms'));
 app.use('/customers', require('./routes/customers'));
-// app.use('/bookings', require('./routes/bookings'));
-// app.use('/payments', require('./routes/payments'));
-// app.use('/reviews', require('./routes/reviews'));
+app.use('/bookings', require('./routes/bookings'));
+app.use('/payments', require('./routes/payments'));
+app.use('/reviews', require('./routes/reviews'));
 
 app.use((err, req, res, next) => {
   console.error(err);
@@ -171,6 +171,110 @@ app.delete('/bookings/:bookingId/rooms/:roomId', (req, res) => {
   res.status(204).end();
 });
 
+// --- Bookings ---
+app.get('/bookings', (req, res) => res.json(db.bookings));
+app.get('/bookings/:id', (req, res) => {
+  const b = find(db.bookings, req.params.id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  const customer = find(db.customers, b.customerId) || null;
+  const rooms = db.room_bookings.filter((rb) => rb.bookingId === b.id).map((rb) => find(db.rooms, rb.roomId));
+  res.json({ ...b, customer, rooms });
+});
+app.post('/bookings', (req, res) => {
+  const { customerId, startDate, endDate, roomIds = [] } = req.body;
+  const booking = { id: nextId(db.bookings), customerId: Number(customerId), startDate, endDate };
+  db.bookings.push(booking);
+  // assign rooms
+  roomIds.forEach((roomId) => db.room_bookings.push({ bookingId: booking.id, roomId: Number(roomId) }));
+  res.status(201).json(booking);
+});
+app.put('/bookings/:id', (req, res) => {
+  const b = find(db.bookings, req.params.id);
+  if (!b) return res.status(404).json({ error: 'Booking not found' });
+  const { startDate, endDate, roomIds } = req.body;
+  if (startDate) b.startDate = startDate;
+  if (endDate) b.endDate = endDate;
+  if (Array.isArray(roomIds)) {
+    // remove existing room_bookings for this booking
+    db.room_bookings = db.room_bookings.filter((rb) => rb.bookingId !== b.id);
+    roomIds.forEach((roomId) => db.room_bookings.push({ bookingId: b.id, roomId: Number(roomId) }));
+  }
+  res.json(b);
+});
+app.delete('/bookings/:id', (req, res) => {
+  const idx = db.bookings.findIndex((b) => b.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Booking not found' });
+  db.bookings.splice(idx, 1);
+  db.room_bookings = db.room_bookings.filter((rb) => rb.bookingId !== Number(req.params.id));
+  res.status(204).end();
+});
+
+// --- Payments ---
+app.get('/payments', (req, res) => res.json(db.payments));
+app.get('/payments/:id', (req, res) => {
+  const p = find(db.payments, req.params.id);
+  if (!p) return res.status(404).json({ error: 'Payment not found' });
+  res.json(p);
+});
+app.post('/bookings/:bookingId/payment', (req, res) => {
+  const booking = find(db.bookings, req.params.bookingId);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  const { amount, method } = req.body;
+  const payment = { id: nextId(db.payments), bookingId: booking.id, amount, method, date: new Date().toISOString() };
+  db.payments.push(payment);
+  res.status(201).json(payment);
+});
+app.get('/payments/:id/booking', (req, res) => {
+  const p = find(db.payments, req.params.id);
+  if (!p) return res.status(404).json({ error: 'Payment not found' });
+  const booking = find(db.bookings, p.bookingId) || null;
+  const customer = booking ? find(db.customers, booking.customerId) : null;
+  res.json({ payment: p, booking, customer });
+});
+
+// --- Reviews ---
+app.get('/reviews', (req, res) => res.json(db.reviews));
+app.get('/reviews/:id', (req, res) => {
+  const r = find(db.reviews, req.params.id);
+  if (!r) return res.status(404).json({ error: 'Review not found' });
+  res.json({ ...r, room: find(db.rooms, r.roomId) || null, customer: find(db.customers, r.customerId) || null });
+});
+app.post('/rooms/:roomId/reviews', (req, res) => {
+  const room = find(db.rooms, req.params.roomId);
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  const { customerId, rating, comment } = req.body;
+  const customer = find(db.customers, customerId);
+  if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  const review = { id: nextId(db.reviews), roomId: room.id, customerId: customer.id, rating, comment, date: new Date().toISOString() };
+  db.reviews.push(review);
+  res.status(201).json(review);
+});
+app.put('/reviews/:id', (req, res) => {
+  const r = find(db.reviews, req.params.id);
+  if (!r) return res.status(404).json({ error: 'Review not found' });
+  Object.assign(r, req.body);
+  res.json(r);
+});
+app.delete('/reviews/:id', (req, res) => {
+  const idx = db.reviews.findIndex((r) => r.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Review not found' });
+  db.reviews.splice(idx, 1);
+  res.status(204).end();
+});
+app.get('/rooms/:roomId/reviews', (req, res) => {
+  const reviews = db.reviews.filter((rv) => rv.roomId === Number(req.params.roomId)).map((rv) => ({
+    ...rv,
+    customer: find(db.customers, rv.customerId) || null,
+  }));
+  res.json(reviews);
+});
+app.get('/customers/:customerId/reviews', (req, res) => {
+  const reviews = db.reviews.filter((rv) => rv.customerId === Number(req.params.customerId)).map((rv) => ({
+    ...rv,
+    room: find(db.rooms, rv.roomId) || null,
+  }));
+  res.json(reviews);
+});
 
 // Basic error-handling middleware
 app.use((err, req, res, next) => {
