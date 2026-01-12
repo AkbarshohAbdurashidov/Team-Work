@@ -23,6 +23,11 @@ const pool = new Pool({
   password: password !== undefined && password !== null ? String(password) : undefined,
   database: database ? stripQuotes(database) : undefined,
   port: port ? Number(port) : undefined,
+  ssl: (function(){
+    const envSsl = (process.env.DB_SSL || process.env.PGSSLMODE || '').toLowerCase();
+    const needSsl = envSsl === 'true' || envSsl === 'require' || /render/i.test(host || '') || /sslmode=require/i.test(connectionString || '');
+    return needSsl ? { rejectUnauthorized: false } : undefined;
+  })(),
 });
 
 module.exports = {

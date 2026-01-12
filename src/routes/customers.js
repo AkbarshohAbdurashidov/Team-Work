@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const bcrypt = require('bcrypt');
 
 router.get('/', async (req, res, next) => {
   try {
@@ -19,8 +20,10 @@ router.get('/:id', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { name, email } = req.body;
-    const { rows } = await db.query('INSERT INTO customers(name,email) VALUES($1,$2) RETURNING *', [name, email]);
+    const { fullname, phone } = req.body;
+    const hashPhone = await bcrypt.hash(phone)
+    if (!fullname || !phone) return res.status(400).json({ error: 'name and email required' });
+    const { rows } = await db.query('INSERT INTO customers(fullname,phone) VALUES($1,$2) RETURNING *', [fullname, hashPhone]);
     res.status(201).json(rows[0]);
   } catch (err) { next(err); }
 });
