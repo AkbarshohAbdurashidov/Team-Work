@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const auth = require('../middlewares/auth');
 
 router.get('/', async (req, res, next) => {
   try {
@@ -18,7 +19,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /bookings/:bookingId/payment → create payment for a booking
-router.post('/bookings/:bookingId/payment', async (req, res, next) => {
+router.post('/bookings/:bookingId/payment', auth, async (req, res, next) => {
   try {
     const { amount, method } = req.body;
     const { rows } = await db.query('INSERT INTO payments(booking_id, amount, method) VALUES($1,$2,$3) RETURNING *', [req.params.bookingId, amount, method]);

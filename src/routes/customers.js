@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth');
 const db = require('../db');
 const bcrypt = require('bcrypt');
 
@@ -28,7 +29,7 @@ router.post('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', auth, async (req, res, next) => {
   try {
     const { name, email } = req.body;
     const { rows } = await db.query('UPDATE customers SET name=$1, email=$2 WHERE id=$3 RETURNING *', [name, email, req.params.id]);
@@ -37,7 +38,7 @@ router.put('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', auth, async (req, res, next) => {
   try {
     await db.query('DELETE FROM customers WHERE id=$1', [req.params.id]);
     res.status(204).end();

@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
-
+app.use(require('./middlewares/logger'));
 app.use(express.json());
 
 // Routes
@@ -12,6 +12,7 @@ app.use('/customers', require('./routes/customers'));
 app.use('/bookings', require('./routes/bookings'));
 app.use('/payments', require('./routes/payments'));
 app.use('/reviews', require('./routes/reviews'));
+app.use('/auth', require('./routes/auth'));
 
 app.use((err, req, res, next) => {
   console.error(err);

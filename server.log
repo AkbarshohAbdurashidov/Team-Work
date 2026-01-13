@@ -1,0 +1,14 @@
+[dotenv@17.2.3] injecting env (6) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+DB config: {
+  connectionString: undefined,
+  host: 'dpg-d50053m3jp1c73euce80-a.virginia-postgres.render.com',
+  user: 'team',
+  password: '<<present>>',
+  database: 'teamwork_oo3e',
+  port: 5432
+}
+Server running on port 4001
+Server running on port 4001
+2026-01-12T13:37:46.423Z POST /auth/login
+2026-01-12T13:38:48.278Z POST /auth/login

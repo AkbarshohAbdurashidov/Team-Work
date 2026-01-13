@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const auth = require('../middlewares/auth');
 
 router.get('/', async (req, res, next) => {
   try {
@@ -25,7 +26,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /rooms/:roomId/reviews → add review for a room by a customer
-router.post('/rooms/:roomId/reviews', async (req, res, next) => {
+router.post('/rooms/:roomId/reviews', auth, async (req, res, next) => {
   try {
     const { customer_id, rating, comment } = req.body;
     const { rows } = await db.query('INSERT INTO reviews(room_id, customer_id, rating, comment) VALUES($1,$2,$3,$4) RETURNING *', [req.params.roomId, customer_id, rating, comment]);
@@ -33,7 +34,7 @@ router.post('/rooms/:roomId/reviews', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', auth, async (req, res, next) => {
   try {
     const { rating, comment } = req.body;
     const { rows } = await db.query('UPDATE reviews SET rating=$1, comment=$2 WHERE id=$3 RETURNING *', [rating, comment, req.params.id]);
@@ -42,7 +43,7 @@ router.put('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', auth, async (req, res, next) => {
   try {
     await db.query('DELETE FROM reviews WHERE id=$1', [req.params.id]);
     res.status(204).end();

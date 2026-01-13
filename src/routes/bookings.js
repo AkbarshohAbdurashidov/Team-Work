@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const auth = require('../middlewares/auth');
 
 // GET /bookings → all bookings
 router.get('/', async (req, res, next) => {
@@ -32,7 +33,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /bookings → create booking with multiple rooms
-router.post('/', async (req, res, next) => {
+router.post('/', auth, async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     const { customer_id, start_date, end_date, room_ids = [] } = req.body;
@@ -54,7 +55,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /bookings/:id → update booking or assigned rooms
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', auth, async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     const { customer_id, start_date, end_date, room_ids } = req.body;
@@ -76,7 +77,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /bookings/:id → delete booking and associated room_bookings
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', auth, async (req, res, next) => {
   try {
     await db.query('DELETE FROM bookings WHERE id=$1', [req.params.id]);
     res.status(204).end();
@@ -84,7 +85,7 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 // POST /bookings/:bookingId/rooms/:roomId → assign a room to a booking
-router.post('/:bookingId/rooms/:roomId', async (req, res, next) => {
+router.post('/:bookingId/rooms/:roomId', auth, async (req, res, next) => {
   try {
     await db.query('INSERT INTO room_bookings(booking_id, room_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [req.params.bookingId, req.params.roomId]);
     res.status(201).end();
@@ -92,7 +93,7 @@ router.post('/:bookingId/rooms/:roomId', async (req, res, next) => {
 });
 
 // DELETE /bookings/:bookingId/rooms/:roomId → remove a room from a booking
-router.delete('/:bookingId/rooms/:roomId', async (req, res, next) => {
+router.delete('/:bookingId/rooms/:roomId', auth, async (req, res, next) => {
   try {
     await db.query('DELETE FROM room_bookings WHERE booking_id=$1 AND room_id=$2', [req.params.bookingId, req.params.roomId]);
     res.status(204).end();
